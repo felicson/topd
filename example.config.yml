@@ -3,6 +3,7 @@ example1:
     database_user: user
     database_password: password
     database_socket: '/run/mysqld/mysqld.sock'
+    database_location: 'Europe/Moscow'
     socket: '/tmp/topd_a.sock'
     host: 'top.example.com'
     domain: '.example.com'
@@ -15,6 +16,7 @@ example2:
     database_user: user
     database_password: password
     database_socket: '/run/mysqld/mysqld.sock'
+    database_location: 'Europe/Moscow'
     socket: '/tmp/topd_b.sock'
     host: 'top.example.org:8080'
     domain: '.example.org'

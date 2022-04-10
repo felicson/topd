@@ -2,8 +2,8 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
 
 	"gopkg.in/yaml.v2"
 )
@@ -14,6 +14,7 @@ type Config struct {
 	DatabaseUser     string `yaml:"database_user"`
 	DatabasePassword string `yaml:"database_password"`
 	DatabaseSocket   string `yaml:"database_socket"`
+	DatabaseLocation string `yaml:"database_location"`
 	Socket           string
 	Domain           string
 	Host             string
@@ -32,18 +33,16 @@ func NewConfig(configPath, env string) (Config, error) {
 	cfg, err := ioutil.ReadFile(configPath)
 
 	if err != nil {
-		return config, errors.New("Wrong config file of path")
+		return config, errors.New("wrong config file of path")
 	}
 	var configMain map[string]Config
 
-	err = yaml.Unmarshal(cfg, &configMain)
-
-	if err != nil {
-		log.Fatal(err)
+	if err = yaml.Unmarshal(cfg, &configMain); err != nil {
+		return Config{}, err
 	}
 
 	if config, ok = configMain[env]; !ok {
-		return Config{}, errors.New("Wrong work environment")
+		return Config{}, fmt.Errorf("wrong work environment %s", env)
 	}
 	return config, nil
 

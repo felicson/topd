@@ -3,7 +3,6 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/felicson/topd/internal/config"
@@ -14,35 +13,28 @@ import (
 
 const createdFormat = "2006-01-02 15:04:05"
 
-var location *time.Location
-
 type Mysql struct {
-	db *sql.DB
-}
-
-var (
-	once sync.Once
-	db   *sql.DB
-)
-
-func init() {
-	location, _ = time.LoadLocation("Europe/Moscow")
+	db       *sql.DB
+	location *time.Location
 }
 
 //New storage constructor
 func New(config config.Config) (Mysql, error) {
-	var err error
 
-	once.Do(func() {
-		db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@unix(%s)/%s",
-			config.DatabaseUser,
-			config.DatabasePassword,
-			config.DatabaseSocket,
-			config.Database))
-	})
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@unix(%s)/%s",
+		config.DatabaseUser,
+		config.DatabasePassword,
+		config.DatabaseSocket,
+		config.Database))
+
+	location, err := time.LoadLocation(config.DatabaseLocation)
+	if err != nil {
+		return Mysql{}, fmt.Errorf("on load location: %v", err)
+	}
 
 	return Mysql{
-		db: db,
+		db:       db,
+		location: location,
 	}, err
 }
 
@@ -76,7 +68,7 @@ func (s Mysql) SaveData(tmpTopDataArray []storage.TopData) (err error) {
 			row.Page,
 			row.Referrer,
 			row.Date.Format(createdFormat),
-			toDays(row.Date),
+			toDays(row.Date, s.location),
 			row.UA,
 			row.IP.String(),
 			row.City,
@@ -121,9 +113,8 @@ func (s *Mysql) Close() error {
 	return s.db.Close()
 }
 
-func toDays(t time.Time) int64 {
-
-	//mysql analog TO_DAYS(NOW())
+func toDays(t time.Time, location *time.Location) int64 {
+	//mysql analog of TO_DAYS(time)
 	t = t.In(location)
 	_, offset := t.Zone()
 	return ((t.Unix() + int64(offset)) / (60 * 60 * 24)) + 719528
