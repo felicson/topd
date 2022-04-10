@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/felicson/topd/storage/mysql"
 	"io"
 	"log"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"github.com/felicson/topd/internal/bot"
 	"github.com/felicson/topd/internal/config"
 	"github.com/felicson/topd/storage"
+	"github.com/felicson/topd/storage/mysql"
 )
 
 func main() {
