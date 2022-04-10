@@ -1,0 +1,23 @@
+example1:
+    database: db
+    database_user: user
+    database_password: password
+    database_socket: '/run/mysqld/mysqld.sock'
+    socket: '/tmp/topd_a.sock'
+    host: 'top.example.com'
+    domain: '.example.com'
+    images_path: 'counters/m/'
+    logfile: /dev/stdout
+    bots: 'bots.txt'
+
+example2:
+    database: db
+    database_user: user
+    database_password: password
+    database_socket: '/run/mysqld/mysqld.sock'
+    socket: '/tmp/topd_b.sock'
+    host: 'top.example.org:8080'
+    domain: '.example.org'
+    images_path: 'counters/t/'
+    logfile: /dev/stdout
+    bots: 'bots.txt'
