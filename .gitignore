@@ -1,5 +1,4 @@
 *.o
 *.so
-topd
 .vscode
 config.yml
