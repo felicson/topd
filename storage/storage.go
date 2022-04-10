@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"errors"
 	"log"
 	"net"
@@ -85,42 +84,6 @@ type RawTopData struct {
 	id        int
 }
 
-type HistoryCollector struct {
-	active   bool
-	dataChan chan *RawTopData
-}
-
-// Run starts history collector
-func (hc *HistoryCollector) Run(ctx context.Context) {
-	hc.active = true
-	go func() {
-
-	LOOP:
-		for {
-			select {
-			case item := <-hc.dataChan:
-				TopDataArray = append(TopDataArray, newHistoryRow(item))
-			case <-ctx.Done():
-				break LOOP
-			}
-		}
-
-	}()
-}
-
-func NewHistoryCollector(cap int) HistoryCollector {
-	return HistoryCollector{dataChan: make(chan *RawTopData, cap)}
-}
-
-func (hc *HistoryCollector) WriteHistory(page, referrer, xGeo, session, userAgent string, ip net.IP, siteID int) error {
-	if !hc.active {
-		return ErrHistoryCollectorStopped
-	}
-
-	hc.dataChan <- &RawTopData{page, referrer, xGeo, session, userAgent, ip, siteID}
-	return nil
-}
-
 func newHistoryRow(raw *RawTopData) TopData {
 
 	cityID := 0
@@ -148,15 +111,7 @@ const SIGHUP = syscall.SIGHUP
 
 var sps *SessionsPerSite
 
-type SessionsPerSite struct {
-	data map[int]map[string]struct{}
-	lock sync.RWMutex
-}
-
-func NewSessionPerSite() *SessionsPerSite {
-	sps = &SessionsPerSite{data: make(map[int]map[string]struct{})}
-	return sps
-}
+type sessionH map[int]map[string]struct{}
 
 type SiteAggregate struct {
 	lock    sync.RWMutex
@@ -255,10 +210,20 @@ func NewSiteAggregate(storage Storage, images image.ImageList) SiteAggregate {
 	}
 }
 
+type SessionsPerSite struct {
+	sessions sessionH
+	lock     sync.RWMutex
+}
+
+func NewSessionPerSite() *SessionsPerSite {
+	sps = &SessionsPerSite{sessions: make(sessionH)}
+	return sps
+}
+
 // CheckSession checking session in hash
 func (sps *SessionsPerSite) CheckSession(siteID int, session string) bool {
 
-	if site, ok := sps.data[siteID]; ok {
+	if site, ok := sps.sessions[siteID]; ok {
 		if _, ok = site[session]; ok {
 			return ok
 		}
@@ -273,9 +238,9 @@ func (sps *SessionsPerSite) CheckSession(siteID int, session string) bool {
 
 func (sps *SessionsPerSite) append(siteID int, session string) {
 
-	if _, ok := sps.data[siteID]; !ok {
-		sps.data[siteID] = map[string]struct{}{session: {}}
+	if _, ok := sps.sessions[siteID]; !ok {
+		sps.sessions[siteID] = map[string]struct{}{session: {}}
 		return
 	}
-	sps.data[siteID][session] = struct{}{}
+	sps.sessions[siteID][session] = struct{}{}
 }

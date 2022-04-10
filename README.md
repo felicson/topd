@@ -4,3 +4,4 @@ This repo contains code for track user activity on the website and display graph
 
 ## todo
 - migrations
+- logger
