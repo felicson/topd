@@ -8,7 +8,8 @@ example1:
     host: 'top.example.com'
     domain: '.example.com'
     images_path: 'counters/m/'
-    logfile: /dev/stdout
+    logfile: stdout
+    log_level: debug
     bots: 'bots.txt'
 
 example2:
@@ -21,5 +22,6 @@ example2:
     host: 'top.example.org:8080'
     domain: '.example.org'
     images_path: 'counters/t/'
-    logfile: /dev/stdout
+    logfile: stdout
+    log_level: debug
     bots: 'bots.txt'

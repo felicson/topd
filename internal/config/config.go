@@ -20,6 +20,7 @@ type Config struct {
 	Host             string
 	ImagesPath       string `yaml:"images_path"`
 	Logfile          string
+	LogLevel         string `yaml:"log_level"`
 	BotsList         string `yaml:"bots"`
 }
 

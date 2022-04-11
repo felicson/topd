@@ -5,24 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"log"
 	"net"
 	"os"
 	"time"
 )
-
-func logHandler(next http.HandlerFunc) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, req *http.Request) {
-
-		ip := req.Header.Get("X-Real-IP")
-		start := time.Now()
-		next(w, req)
-		end := time.Now()
-		log.Printf("%s [%s] %s %v\n", ip, req.Method, req.URL.String(), end.Sub(start))
-
-	}
-}
 
 //NotFound handler
 func NotFound(w http.ResponseWriter, _ *http.Request) {
@@ -31,14 +17,12 @@ func NotFound(w http.ResponseWriter, _ *http.Request) {
 
 //Run start web server
 func Run(ctx context.Context, deps Deps, done chan struct{}) error {
-	var err error
 
 	config := deps.GetConfig()
-
-	log.SetOutput(deps.GetLogger())
+	logger := deps.GetLogger()
 
 	if _, err := os.Stat(config.Socket); err == nil {
-		log.Println("Trying to remove exist socket file")
+		logger.Info("Trying to remove exist socket file")
 		if err := os.Remove(config.Socket); err != nil {
 			return fmt.Errorf("on remove socket file: %v", err)
 		}
@@ -70,10 +54,11 @@ func Run(ctx context.Context, deps Deps, done chan struct{}) error {
 		sessionPerSite: deps.GetSessionPerSite(),
 		historyWriter:  deps.GetHistoryWriter(),
 		bots:           deps.GetBotChecker(),
+		logger:         logger,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/top/", logHandler(web.ErrHandler(web.TopServer)))
+	mux.HandleFunc("/top/", web.logHandler(web.ErrHandler(web.TopServer)))
 	mux.HandleFunc("/", NotFound)
 
 	server := http.Server{

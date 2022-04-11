@@ -1,7 +1,7 @@
 package memory
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/felicson/topd/internal/config"
 	"github.com/felicson/topd/storage"
@@ -15,7 +15,7 @@ func New(_ config.Config) (Memory, error) {
 
 func (m Memory) SaveData(tmpTopDataArray []storage.TopData) error {
 	for _, td := range tmpTopDataArray {
-		log.Println(td)
+		fmt.Println(td)
 	}
 	return nil
 }

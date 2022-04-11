@@ -2,7 +2,6 @@ package topd
 
 import (
 	"bytes"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/felicson/topd/internal/bot"
 	"github.com/felicson/topd/internal/config"
+	"github.com/felicson/topd/internal/log"
 	"github.com/felicson/topd/internal/session"
 	"github.com/felicson/topd/storage"
 )
@@ -25,6 +25,18 @@ type Web struct {
 	config         config.Config
 	historyWriter  historyWriter
 	bots           *bot.Checker
+	logger         log.Logger
+}
+
+func (web *Web) logHandler(next http.HandlerFunc) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		ip := req.Header.Get("X-Real-IP")
+		start := time.Now()
+		next(w, req)
+		web.logger.Infof("%s [%s] %s %v\n", ip, req.Method, req.URL.String(), time.Now().Sub(start))
+	}
 }
 
 func (web *Web) ErrHandler(fn func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
@@ -88,14 +100,15 @@ func (web *Web) TopServer(w http.ResponseWriter, req *http.Request) {
 	xGeo := req.Header.Get("X-Geo")
 
 	if err := web.historyWriter.WriteHistory(page, ref, xGeo, req.UserAgent(), sessionValue, net.ParseIP(ip), siteID); err != nil {
-		log.Println(err)
+		web.logger.Error(err)
 	}
 
 	val, _ := web.siteMap.Get(siteID)
 
 	image, err := web.siteMap.GetImage(val.CounterID)
 	if err != nil {
-		log.Println(err)
+		web.logger.Error(err)
+		return
 	}
 
 	if ok := web.sessionPerSite.CheckSession(siteID, sessionValue); !ok {
@@ -108,11 +121,13 @@ func (web *Web) TopServer(w http.ResponseWriter, req *http.Request) {
 	if val.DisplayDigits() {
 		if err := image.Draw(w, val.Hits, val.Hosts); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			web.logger.Error(err)
 		}
 		return
 	}
 	if err := image.Draw(w, 0, 0); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		web.logger.Error(err)
 	}
 }
 
