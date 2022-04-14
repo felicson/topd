@@ -35,7 +35,7 @@ func (web *Web) logHandler(next http.HandlerFunc) http.HandlerFunc {
 		ip := req.Header.Get("X-Real-IP")
 		start := time.Now()
 		next(w, req)
-		web.logger.Infof("%s [%s] %s %v\n", ip, req.Method, req.URL.String(), time.Now().Sub(start))
+		web.logger.Infof("%s [%s] %s %v", ip, req.Method, req.URL.String(), time.Now().Sub(start))
 	}
 }
 
@@ -49,7 +49,9 @@ func (web *Web) ErrHandler(fn func(http.ResponseWriter, *http.Request)) http.Han
 		if _, ok := web.siteMap.Get(siteID); !ok {
 			// return first image with zero values
 			image, _ := web.siteMap.GetImage(1)
-			image.Draw(w, 0, 0)
+			if err := image.Draw(w, 0, 0); err != nil {
+				web.logger.Error(err)
+			}
 			return
 		}
 
@@ -59,9 +61,9 @@ func (web *Web) ErrHandler(fn func(http.ResponseWriter, *http.Request)) http.Han
 
 			scheme := "https"
 
-			url, err := url.Parse(req.Referer())
-			if err == nil && url.Scheme != "" {
-				scheme = url.Scheme
+			u, err := url.Parse(req.Referer())
+			if err == nil && u.Scheme != "" {
+				scheme = u.Scheme
 			}
 
 			var buf bytes.Buffer

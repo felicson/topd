@@ -8,7 +8,8 @@ import (
 // HistoryCollector provide instance for store user activity history
 type HistoryCollector struct {
 	active   bool
-	dataChan chan *RawTopData
+	dataChan chan RawTopData
+	topData  *TopDataCollection
 }
 
 // Run starts history collector
@@ -20,7 +21,7 @@ func (hc *HistoryCollector) Run(ctx context.Context) {
 		for {
 			select {
 			case item := <-hc.dataChan:
-				TopDataArray = append(TopDataArray, newHistoryRow(item))
+				*hc.topData = append(*hc.topData, newHistoryRow(&item))
 			case <-ctx.Done():
 				break LOOP
 			}
@@ -29,15 +30,15 @@ func (hc *HistoryCollector) Run(ctx context.Context) {
 	}()
 }
 
-func NewHistoryCollector(cap int) HistoryCollector {
-	return HistoryCollector{dataChan: make(chan *RawTopData, cap)}
-}
-
 func (hc *HistoryCollector) WriteHistory(page, referrer, xGeo, session, userAgent string, ip net.IP, siteID int) error {
 	if !hc.active {
 		return ErrHistoryCollectorStopped
 	}
 
-	hc.dataChan <- &RawTopData{page, referrer, xGeo, session, userAgent, ip, siteID}
+	hc.dataChan <- RawTopData{page, referrer, xGeo, session, userAgent, ip, siteID}
 	return nil
+}
+
+func NewHistoryCollector(dst *TopDataCollection, cap int) HistoryCollector {
+	return HistoryCollector{dataChan: make(chan RawTopData, cap), topData: dst}
 }

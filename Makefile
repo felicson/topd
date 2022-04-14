@@ -3,7 +3,7 @@
 PWD=`pwd`
 
 run:
-	go run cmd/topd/main.go
+	go run cmd/topd/*.go
 
 clean:
 		rm -f *.o *.so topd

@@ -10,61 +10,28 @@ import (
 	"github.com/felicson/topd/image"
 	"github.com/felicson/topd/internal/bot"
 	"github.com/felicson/topd/internal/config"
-	"github.com/felicson/topd/internal/log"
+	"github.com/felicson/topd/internal/keeper"
 	"github.com/felicson/topd/storage"
 	"github.com/felicson/topd/storage/memory"
 	"go.uber.org/zap"
 )
 
-type webApp struct {
-	config         config.Config
-	siteCollection *storage.SiteAggregate
-	sessionPerSite *storage.SessionsPerSite
-	logger         log.Logger
-	historyWriter  storage.HistoryCollector
-	botChecker     *bot.Checker
-}
-
-func (wa *webApp) GetLogger() log.Logger {
-	return wa.logger
-}
-
-func (wa *webApp) GetConfig() config.Config {
-	return wa.config
-}
-
-func (wa *webApp) GetSiteCollection() *storage.SiteAggregate {
-	return wa.siteCollection
-}
-
-func (wa *webApp) GetSessionPerSite() *storage.SessionsPerSite {
-	return wa.sessionPerSite
-}
-
-func (wa *webApp) GetHistoryWriter() *storage.HistoryCollector {
-	return &wa.historyWriter
-}
-
-func (wa *webApp) GetBotChecker() *bot.Checker {
-	return wa.botChecker
-}
-
 func main() {
 
 	var (
-		env  string
-		conf string
+		envFlag  string
+		confFlag string
 	)
-	flag.StringVar(&env, "env", "a", "env from config.yml")
-	flag.StringVar(&conf, "config", "./config.yml", "config path")
+	flag.StringVar(&envFlag, "env", "a", "env from conf.yml")
+	flag.StringVar(&confFlag, "conf", "config.yml", "conf path")
 	flag.Parse()
 
-	config, err := config.NewConfig(conf, env)
+	conf, err := config.NewConfig(confFlag, envFlag)
 	if err != nil {
-		stdlog.Fatalf("on parse config: %v", err)
+		stdlog.Fatalf("on parse conf: %v", err)
 	}
 
-	if err := run(config); err != nil {
+	if err := run(conf); err != nil {
 		stdlog.Fatal(err)
 	}
 
@@ -106,6 +73,8 @@ func run(config config.Config) error {
 	}
 	defer store.Close()
 
+	ctx := context.Background()
+
 	siteMap := storage.NewSiteAggregate(store, images)
 	siteMap.Init()
 
@@ -114,10 +83,20 @@ func run(config config.Config) error {
 	done := make(chan struct{}, 1)
 	defer close(done)
 
-	go siteMap.SigHandler(done)
+	var topDataCollection storage.TopDataCollection
 
-	ctx := context.Background()
-	hCollector := storage.NewHistoryCollector(10)
+	kd := keeperD{
+		siteCollection: &siteMap,
+		sessionPerSite: sps,
+		logger:         logger,
+		topData:        &topDataCollection,
+		storage:        store,
+	}
+
+	kpr, _ := keeper.New(&kd)
+	go kpr.Run(ctx, done)
+
+	hCollector := storage.NewHistoryCollector(&topDataCollection, 10)
 	hCollector.Run(ctx)
 
 	deps := webApp{
@@ -129,8 +108,8 @@ func run(config config.Config) error {
 		botChecker:     &bChecker,
 	}
 
-	logger.Info("runing top")
-	if err = topd.Run(ctx, &deps, done); err != nil {
+	logger.Info("running topd")
+	if err := topd.Run(ctx, &deps, done); err != nil {
 		return fmt.Errorf("on run topd: %v", err)
 	}
 	return nil
