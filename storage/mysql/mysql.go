@@ -110,7 +110,7 @@ func (s Mysql) Populate(lastID int) ([]storage.Site, error) {
 	return sites, nil
 }
 
-func (s *Mysql) UpdateSites(sites []storage.Site) error {
+func (s Mysql) UpdateSites(sites []storage.Site) error {
 
 	if len(sites) == 0 {
 		return nil

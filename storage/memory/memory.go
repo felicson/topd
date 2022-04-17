@@ -32,7 +32,7 @@ func (m Memory) Populate(lastID int) ([]storage.Site, error) {
 	return []storage.Site{}, nil
 }
 
-func (m *Memory) UpdateSites(_ []storage.Site) error {
+func (m Memory) UpdateSites(_ []storage.Site) error {
 	return nil
 }
 
