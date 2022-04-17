@@ -30,6 +30,7 @@ func BenchmarkDraw(b *testing.B) {
 	}
 	var buf bytes.Buffer
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		buf.Reset()

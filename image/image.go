@@ -10,15 +10,17 @@ import (
 	"image/gif"
 	"image/png"
 	"io"
+	"math"
 	"os"
 	"path"
 	"strconv"
-	"sync"
 
 	"github.com/zachomedia/go-bdf"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
+
+var delim = [15]byte{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
 
 //Image struct for render counter image
 type Image struct {
@@ -50,18 +52,18 @@ func NewImage(path string) (Image, error) {
 
 func (i Image) Draw(w io.Writer, hits, hosts int) error {
 
-	const delim = "               "
 	const lenDelim = 15
 	var (
-		hitsS  string
-		hostsS string
+		b  [64]byte
+		bs = b[:0]
 	)
+	hostsLen := math.Floor(math.Log10(float64(hosts)) + 1)
+	hitsLen := math.Floor(math.Log10(float64(hits)) + 1)
 
-	if hits > 0 {
-		hitsS = strconv.Itoa(hits)
-	}
-	if hosts > 0 {
-		hostsS = strconv.Itoa(hosts)
+	if hits > 0 && hosts > 0 {
+		bs = strconv.AppendInt(bs, int64(hosts), 10)
+		bs = append(bs, delim[:lenDelim-int(hostsLen)-int(hitsLen)]...)
+		bs = strconv.AppendInt(bs, int64(hits), 10)
 	}
 
 	col := color.RGBA{0, 0, 0, 255}
@@ -74,25 +76,14 @@ func (i Image) Draw(w io.Writer, hits, hosts int) error {
 		Face: i.font.NewFace(),
 		Dot:  point,
 	}
-	d.DrawString(hitsS + delim[len(hitsS):lenDelim-len(hostsS)] + hostsS)
-
+	d.DrawBytes(bs)
 	enc := &png.Encoder{
 		CompressionLevel: png.NoCompression,
-		//BufferPool:       bufPool,
 	}
 	if err := enc.Encode(w, newImage); err != nil {
 		return err
 	}
 	return nil
-}
-
-var bufPool = sync.Pool{
-	New: func() interface{} {
-		// The Pool's New function should generally only return pointer
-		// types, since a pointer can be put into the return interface
-		// value without an allocation:
-		return &png.EncoderBuffer{}
-	},
 }
 
 func NewImages(imagePath string) (ImageList, error) {
