@@ -44,8 +44,9 @@ func (s Mysql) SaveData(tmpTopDataArray []storage.TopData) (err error) {
 		return nil
 	}
 
-	sql := `INSERT INTO top_data (user_id, sess_id, page, refferer, date, day, ua, ip, city, country) VALUES (?,?,?,?,?,?,?,?,?,?)`
-	stmt, err := s.db.Prepare(sql)
+	sqlQ := `INSERT INTO top_data (user_id, sess_id, page, refferer, date, day, ua, ip, city, country) 
+				VALUES (?,?,?,?,?,?,?,?,?,?)`
+	stmt, err := s.db.Prepare(sqlQ)
 	if err != nil {
 		return fmt.Errorf("on stmt prepare: %v", err)
 	}
@@ -107,6 +108,37 @@ func (s Mysql) Populate(lastID int) ([]storage.Site, error) {
 		sites = append(sites, site)
 	}
 	return sites, nil
+}
+
+func (s *Mysql) UpdateSites(sites []storage.Site) error {
+
+	sqlQ := `UPDATE top_sites SET visitors = ?, hits = ? WHERE id = ?`
+	stmt, err := s.db.Prepare(sqlQ)
+	if err != nil {
+		return fmt.Errorf("on stmt prepare: %v", err)
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("on begin tx: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	txStmt := tx.Stmt(stmt)
+
+	for _, site := range sites {
+		if _, err := txStmt.Exec(site.Hosts, site.Hits, site.ID); err != nil {
+			return fmt.Errorf("on exec tx: %v", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("on commit tx: %v", err)
+	}
+	return nil
 }
 
 func (s *Mysql) Close() error {

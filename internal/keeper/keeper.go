@@ -14,6 +14,7 @@ import (
 type SiteCollector interface {
 	Reset() bool
 	Init()
+	KeepState() error
 }
 
 type SessionCleaner interface {
@@ -50,6 +51,9 @@ func (k *Keeper) Run(ctx context.Context, done chan<- struct{}) {
 			if err := k.storage.SaveData(t); err != nil {
 				k.logger.Error(err)
 			}
+			if err := k.siteCollector.KeepState(); err != nil {
+				k.logger.Error(err)
+			}
 
 			if sig == syscall.SIGHUP {
 				k.siteCollector.Reset()
@@ -66,6 +70,9 @@ func (k *Keeper) Run(ctx context.Context, done chan<- struct{}) {
 			t := (*k.topData)[:len(*k.topData):len(*k.topData)]
 			*k.topData = (*k.topData)[:0]
 			if err := k.storage.SaveData(t); err != nil {
+				k.logger.Error(err)
+			}
+			if err := k.siteCollector.KeepState(); err != nil {
 				k.logger.Error(err)
 			}
 			k.siteCollector.Init()

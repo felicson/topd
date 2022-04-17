@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"sync"
@@ -16,6 +17,7 @@ var (
 
 type Storage interface {
 	Populate(int) ([]Site, error)
+	UpdateSites([]Site) error
 	SaveData([]TopData) error
 }
 
@@ -141,6 +143,24 @@ func (sm *SiteAggregate) Reset() bool {
 		v.Hosts = 0
 	}
 	return true
+}
+
+func (sm *SiteAggregate) KeepState() error {
+
+	sm.lock.Lock()
+	var sites []Site
+	for k := range sm.sites {
+		site := sm.sites[k]
+		if site.Hosts == 0 {
+			continue
+		}
+		sites = append(sites, *site)
+	}
+	sm.lock.Unlock()
+	if err := sm.storage.UpdateSites(sites); err != nil {
+		return fmt.Errorf("on update sites: %v", err)
+	}
+	return nil
 }
 
 func (sm *SiteAggregate) Init() {
