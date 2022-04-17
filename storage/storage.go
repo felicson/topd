@@ -145,6 +145,7 @@ func (sm *SiteAggregate) Reset() bool {
 	return true
 }
 
+// KeepState saves in the storage current hits and hosts values of the sites
 func (sm *SiteAggregate) KeepState() error {
 
 	sm.lock.Lock()
@@ -163,6 +164,8 @@ func (sm *SiteAggregate) KeepState() error {
 	return nil
 }
 
+// Init populate SiteAggregate from storage.
+// On first call it receiving all records from storage, on another calls only new ones.
 func (sm *SiteAggregate) Init() {
 
 	sm.lock.Lock()
