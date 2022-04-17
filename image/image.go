@@ -10,7 +10,6 @@ import (
 	"image/gif"
 	"image/png"
 	"io"
-	"math"
 	"os"
 	"path"
 	"strconv"
@@ -77,12 +76,12 @@ func (i Image) Draw(w io.Writer, hits, hosts int) error {
 		b  [64]byte
 		bs = b[:0]
 	)
-	hostsLen := math.Floor(math.Log10(float64(hosts)) + 1)
-	hitsLen := math.Floor(math.Log10(float64(hits)) + 1)
+	hostsWidth := numWidth(hosts)
+	hitsWidth := numWidth(hits)
 
 	if hits > 0 && hosts > 0 {
 		bs = strconv.AppendInt(bs, int64(hosts), 10)
-		bs = append(bs, delim[:lenDelim-int(hostsLen)-int(hitsLen)]...)
+		bs = append(bs, delim[:lenDelim-hostsWidth-hitsWidth]...)
 		bs = strconv.AppendInt(bs, int64(hits), 10)
 	}
 
@@ -109,6 +108,15 @@ func (i Image) Draw(w io.Writer, hits, hosts int) error {
 		return err
 	}
 	return nil
+}
+
+func numWidth(i int) int {
+	var cnt int
+	for i > 0 {
+		i = i / 10
+		cnt++
+	}
+	return cnt
 }
 
 func NewImages(imagePath string) (ImageList, error) {
