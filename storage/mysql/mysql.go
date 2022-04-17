@@ -112,6 +112,10 @@ func (s Mysql) Populate(lastID int) ([]storage.Site, error) {
 
 func (s *Mysql) UpdateSites(sites []storage.Site) error {
 
+	if len(sites) == 0 {
+		return nil
+	}
+
 	sqlQ := `UPDATE top_sites SET visitors = ?, hits = ? WHERE id = ?`
 	stmt, err := s.db.Prepare(sqlQ)
 	if err != nil {
