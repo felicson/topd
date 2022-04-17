@@ -76,6 +76,7 @@ func (web *Web) ErrHandler(fn func(http.ResponseWriter, *http.Request)) http.Han
 			w.Header().Set("Location", buf.String())
 			http.SetCookie(w, initCookie(web.config.Domain))
 			w.WriteHeader(302)
+
 			return
 		}
 
@@ -101,7 +102,7 @@ func (web *Web) TopServer(w http.ResponseWriter, req *http.Request) {
 	ref := req.FormValue("ref")
 	xGeo := req.Header.Get("X-Geo")
 
-	if err := web.historyWriter.WriteHistory(page, ref, xGeo, req.UserAgent(), sessionValue, net.ParseIP(ip), siteID); err != nil {
+	if err := web.historyWriter.WriteHistory(page, ref, xGeo, sessionValue, req.UserAgent(), net.ParseIP(ip), siteID); err != nil {
 		web.logger.Error(err)
 	}
 

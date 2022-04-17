@@ -34,8 +34,8 @@ func Run(ctx context.Context, deps Deps, done chan struct{}) error {
 
 	ln, err := net.ListenUnix("unix", addr)
 
-	// tcpAddr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8081")
-	// ln, err := net.ListenTCP("tcp", tcpAddr)
+	//tcpAddr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8081")
+	//ln, err := net.ListenTCP("tcp", tcpAddr)
 
 	if err != nil {
 		return fmt.Errorf("create socket: %v", err)
@@ -54,6 +54,7 @@ func Run(ctx context.Context, deps Deps, done chan struct{}) error {
 		historyWriter:  deps.GetHistoryWriter(),
 		bots:           deps.GetBotChecker(),
 		logger:         logger,
+		config:         config,
 	}
 
 	mux := http.NewServeMux()

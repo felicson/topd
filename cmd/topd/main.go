@@ -12,7 +12,7 @@ import (
 	"github.com/felicson/topd/internal/config"
 	"github.com/felicson/topd/internal/keeper"
 	"github.com/felicson/topd/storage"
-	"github.com/felicson/topd/storage/memory"
+	"github.com/felicson/topd/storage/mysql"
 	"go.uber.org/zap"
 )
 
@@ -66,8 +66,8 @@ func run(config config.Config) error {
 		return fmt.Errorf("on build images: %v", err)
 	}
 
-	//store, err := mysql.New(config)
-	store, err := memory.New(config)
+	store, err := mysql.New(config)
+	//store, err := memory.New(config)
 	if err != nil {
 		return fmt.Errorf("on make storage: %v", err)
 	}
