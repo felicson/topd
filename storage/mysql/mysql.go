@@ -26,6 +26,9 @@ func New(config config.Config) (Mysql, error) {
 		config.DatabasePassword,
 		config.DatabaseSocket,
 		config.Database))
+	if err != nil {
+		return Mysql{}, fmt.Errorf("on open db: %v", err)
+	}
 
 	location, err := time.LoadLocation(config.DatabaseLocation)
 	if err != nil {
