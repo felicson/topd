@@ -14,13 +14,33 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"sync"
 
 	"github.com/zachomedia/go-bdf"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
 
-var delim = [15]byte{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
+var (
+	delim       = [15]byte{' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}
+	encoderPool = sync.Pool{
+		New: func() interface{} {
+			return &pngPool{}
+		},
+	}
+)
+
+type pngPool struct {
+	b *png.EncoderBuffer
+}
+
+func (p *pngPool) Get() *png.EncoderBuffer {
+	return p.b
+}
+
+func (p *pngPool) Put(e *png.EncoderBuffer) {
+	p.b = e
+}
 
 //Image struct for render counter image
 type Image struct {
@@ -69,7 +89,7 @@ func (i Image) Draw(w io.Writer, hits, hosts int) error {
 	col := color.RGBA{0, 0, 0, 255}
 	point := fixed.P(6, 26)
 	newImage := image.NewRGBA(i.image.Bounds())
-	draw.Draw(newImage, i.image.Bounds(), i.image, image.ZP, draw.Src)
+	draw.Draw(newImage, i.image.Bounds(), i.image, image.Point{}, draw.Src)
 	d := font.Drawer{
 		Dst:  newImage,
 		Src:  image.NewUniform(col),
@@ -77,8 +97,13 @@ func (i Image) Draw(w io.Writer, hits, hosts int) error {
 		Dot:  point,
 	}
 	d.DrawBytes(bs)
+
+	bPool := encoderPool.Get().(*pngPool)
+	defer encoderPool.Put(bPool)
+
 	enc := &png.Encoder{
 		CompressionLevel: png.NoCompression,
+		BufferPool:       bPool,
 	}
 	if err := enc.Encode(w, newImage); err != nil {
 		return err

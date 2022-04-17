@@ -32,10 +32,10 @@ func Run(ctx context.Context, deps Deps, done chan struct{}) error {
 		return err
 	}
 
-	ln, err := net.ListenUnix("unix", addr)
+	_, err = net.ListenUnix("unix", addr)
 
-	// tcpAddr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8081")
-	// ln, err := net.ListenTCP("tcp", tcpAddr)
+	tcpAddr, _ := net.ResolveTCPAddr("tcp", "0.0.0.0:8081")
+	ln, err := net.ListenTCP("tcp", tcpAddr)
 
 	if err != nil {
 		return fmt.Errorf("create socket: %v", err)

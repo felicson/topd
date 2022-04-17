@@ -91,7 +91,7 @@ func (web *Web) TopServer(w http.ResponseWriter, req *http.Request) {
 	ip := req.Header.Get("X-Real-IP")
 	sessionValue := ip
 
-	if cookie, err := req.Cookie("sessionValue"); err == nil {
+	if cookie, err := req.Cookie("sess"); err == nil {
 		sessionValue = cookie.Value
 	}
 
