@@ -64,6 +64,7 @@ func (s Mysql) SaveData(tmpTopDataArray []storage.TopData) (err error) {
 	}()
 
 	txStmt := tx.Stmt(stmt)
+	defer txStmt.Close()
 
 	for _, row := range tmpTopDataArray {
 
@@ -135,6 +136,7 @@ func (s Mysql) UpdateSites(sites []storage.Site) error {
 	}()
 
 	txStmt := tx.Stmt(stmt)
+	defer txStmt.Close()
 
 	for _, site := range sites {
 		if _, err := txStmt.Exec(site.Hosts, site.Hits, site.ID); err != nil {
