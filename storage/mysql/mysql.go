@@ -49,26 +49,27 @@ func (s Mysql) SaveData(tmpTopDataArray []storage.TopData) (err error) {
 
 	sqlQ := `INSERT INTO top_data (user_id, sess_id, page, refferer, date, day, ua, ip, city, country) 
 				VALUES (?,?,?,?,?,?,?,?,?,?)`
-	stmt, err := s.db.Prepare(sqlQ)
-	if err != nil {
-		return fmt.Errorf("on stmt prepare: %v", err)
-	}
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("on begin tx: %v", err)
 	}
+
+	stmt, err := tx.Prepare(sqlQ)
+	if err != nil {
+		return fmt.Errorf("on stmt prepare: %v", err)
+	}
+	defer stmt.Close()
+
 	defer func() {
 		if err != nil {
 			_ = tx.Rollback()
 		}
 	}()
 
-	txStmt := tx.Stmt(stmt)
-	defer txStmt.Close()
-
 	for _, row := range tmpTopDataArray {
 
-		if _, err := txStmt.Exec(row.SiteID,
+		if _, err := stmt.Exec(row.SiteID,
 			row.Sess,
 			row.Page,
 			row.Referrer,
@@ -121,25 +122,26 @@ func (s Mysql) UpdateSites(sites []storage.Site) error {
 	}
 
 	sqlQ := `UPDATE top_sites SET visitors = ?, hits = ? WHERE id = ?`
-	stmt, err := s.db.Prepare(sqlQ)
-	if err != nil {
-		return fmt.Errorf("on stmt prepare: %v", err)
-	}
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("on begin tx: %v", err)
 	}
+
+	stmt, err := tx.Prepare(sqlQ)
+	if err != nil {
+		return fmt.Errorf("on stmt prepare: %v", err)
+	}
+	defer stmt.Close()
+
 	defer func() {
 		if err != nil {
 			_ = tx.Rollback()
 		}
 	}()
 
-	txStmt := tx.Stmt(stmt)
-	defer txStmt.Close()
-
 	for _, site := range sites {
-		if _, err := txStmt.Exec(site.Hosts, site.Hits, site.ID); err != nil {
+		if _, err := stmt.Exec(site.Hosts, site.Hits, site.ID); err != nil {
 			return fmt.Errorf("on exec tx: %v", err)
 		}
 	}
