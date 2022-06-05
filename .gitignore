@@ -2,3 +2,4 @@
 *.so
 .vscode
 config.yml
+.idea

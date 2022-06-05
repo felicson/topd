@@ -140,8 +140,8 @@ func (s Mysql) UpdateSites(sites []storage.Site) error {
 		}
 	}()
 
-	for _, site := range sites {
-		if _, err := stmt.Exec(site.Hosts, site.Hits, site.ID); err != nil {
+	for i := range sites {
+		if _, err := stmt.Exec(sites[i].Hosts, sites[i].Hits, sites[i].ID); err != nil {
 			return fmt.Errorf("on exec tx: %v", err)
 		}
 	}
